@@ -107,7 +107,7 @@ jobs:
 
   publish-manifest:
     name: Publish relay manifest
-    needs: [detect-server-changes, build-amd64, build-arm64]
+    needs: [detect-server-changes, build-amd64]
     if: needs.detect-server-changes.outputs.publish == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -142,15 +142,13 @@ jobs:
           IMAGE: ${{ needs.detect-server-changes.outputs.image }}
           VERSION: ${{ needs.detect-server-changes.outputs.version }}
           AMD64_DIGEST: ${{ needs.build-amd64.outputs.digest }}
-          ARM64_DIGEST: ${{ needs.build-arm64.outputs.digest }}
         shell: bash
         run: |
           set -euo pipefail
 
           tags=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< '${{ steps.meta.outputs.json }}')
           docker buildx imagetools create $tags \
-            "$IMAGE@$AMD64_DIGEST" \
-            "$IMAGE@$ARM64_DIGEST"
+            "$IMAGE@$AMD64_DIGEST" 
 
           digest="$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{.Manifest.Digest}}')"
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
